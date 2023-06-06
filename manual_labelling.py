@@ -73,8 +73,7 @@ def menu(text: str, labels: list, max_inputs) -> tuple:
 
 def ask_user_for_label(record_id: str, text: str, database_path: str, labels: list, max_no_labels: int = 3) -> tuple:
     """
-    Show text to user and ask for label input. Update database in case of valid input. If user type "skip" text will not
-    be added into database.
+    Show text to user and ask for label input. Update database in case of valid input.
 
     :param record_id: name of file from which text bullet was extracted
     :param text: text which is going to be tagged
@@ -126,15 +125,54 @@ def initiate_database(database_path: str) -> None:
     database.close()
     print(f"Empty database was successfully created in {database_path}")
 
+    
+def loop_through_data(record_id: list, last_id: str, data: list, database_path: str, labels: list):
+    """
+    Loop through given list with short text and asks user for labels.
+
+    :param record_id: file from which text was extracted.
+    :param last_id: last file present in the database.
+    :param data: list with bullet points or short text.
+    :param database_path: path to database.
+    :param labels: list with tags.
+    :return: nothing
+    """
+    if not last_id:
+        start = True
+    else:
+        start = False
+
+    user_label = []
+    for index, text in enumerate(data):
+
+        if not start and str(record_id[index]) == last_id:
+            start = True
+            continue
+        elif not start:
+            continue
+
+        user_label, status = ask_user_for_label(record_id[index], text, database_path, labels)
+        if status == "exit":
+            break
+        elif status == "skip":
+            continue
+
+        for label in user_label:
+            if label not in labels:
+                labels.append(label)
+
+    print("All used labels:")
+    print(labels)
+    
 
 def start_labelling(database_path: str, data: list, record_id: list, labels: list,
                     shuffle_flag: bool = False, shuffle_seed: int = 123,
                     blank_database_flag: bool = False) -> None:
     """
-    Loop through data. Ask user for input to specify tag for displayed text from data. Tag structure will be taken from
-    tag dictionary. Program ask user for every level of tags. For every tag it will display menu. With Then update
-    database with user input. User can close this function by typing "exit". Rerun of the function will automatically
-    skip already filled records from data.
+    Loop through data. Ask user for input to specify labels for displayed text from data. Then update
+    database with user input. User can close this function by typing -2 into prompt. Rerun of the function 
+    with blank_database_flag equal to False automatically skips already filled records from data. With
+    blank_database_flag True database will be deleted and function will start over with empty database.
 
     :param database_path: path to sqlite database
     :param data: data extracted from xmls, format of data is ("file", {dict with xml tags}, {dict with content}
@@ -177,45 +215,6 @@ def start_labelling(database_path: str, data: list, record_id: list, labels: lis
         Random(shuffle_seed).shuffle(record_id)
 
     loop_through_data(record_id, last_id, data, database_path, labels)
-
-
-def loop_through_data(record_id: list, last_id: str, data: list, database_path: str, labels: list):
-    """
-    Loop through given list with short text and ask tag from user.
-
-    :param record_id: file from which text was extracted.
-    :param last_id: last file present in the database.
-    :param data: list with bullet points or short text.
-    :param database_path: path to database.
-    :param labels: list with tags.
-    :return: nothing
-    """
-    if not last_id:
-        start = True
-    else:
-        start = False
-
-    user_label = []
-    for index, text in enumerate(data):
-
-        if not start and str(record_id[index]) == last_id:
-            start = True
-            continue
-        elif not start:
-            continue
-
-        user_label, status = ask_user_for_label(record_id[index], text, database_path, labels)
-        if status == "exit":
-            break
-        elif status == "skip":
-            continue
-
-        for label in user_label:
-            if label not in labels:
-                labels.append(label)
-
-    print("All used labels:")
-    print(labels)
 
 
 # load inclusion and exclusion data extracted from xml files and loop through them and manually label them by own
